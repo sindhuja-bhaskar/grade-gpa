@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/*
+ * Visual language for the planner. Kept small on purpose: §39.1 asks for an
+ * interface a student can read quickly, and §29 asks the dashboard to show
+ * actionable information rather than decoration.
+ */
+
+@theme {
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-surface: #ffffff;
+  --color-canvas: #f6f7fb;
+  --color-line: #e2e8f0;
+  --color-accent: #3d5afe;
+
+  /* Performance categories (§24) — never used to imply a grade. */
+  --color-excellent: #0f766e;
+  --color-strong: #15803d;
+  --color-ontrack: #2563eb;
+  --color-attention: #b45309;
+  --color-improvement: #c2410c;
+  --color-risk: #b91c1c;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+}

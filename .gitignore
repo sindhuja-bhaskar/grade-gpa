@@ -1,0 +1,45 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# testing
+/coverage
+
+# prisma
+/src/generated
+/prisma/*.db
+/prisma/*.db-journal
+
+# environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# generated report intermediate (the PDF is committed; this is rebuilt from the
+# Markdown by scripts/build-report.mjs)
+/docs/report.html
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea

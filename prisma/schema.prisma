@@ -1,0 +1,227 @@
+// Grade/GPA Planner — data model.
+// Mirrors the entity set in docs/reqs.md §32 ("Database Requirements & ERM").
+// Connection URL lives in prisma7.config.ts / DATABASE_URL, never in this file.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums (§10.1, §10.2, §13, §18, §21) ───────────────────────────────────
+
+enum CourseType {
+  THEORY
+  LABORATORY
+  THEORY_AND_LAB
+}
+
+enum GradingType {
+  ABSOLUTE
+  RELATIVE
+}
+
+enum SubjectStatus {
+  ONGOING
+  COMPLETED
+}
+
+/// An assessment is either recorded (AVAILABLE, with a mark) or NOT_AVAILABLE.
+/// NOT_AVAILABLE is never the same as a mark of zero — §12.1, BR-04, BR-05.
+enum AssessmentStatus {
+  AVAILABLE
+  NOT_AVAILABLE
+}
+
+/// Which half of a THEORY_AND_LAB course a component belongs to (§17.3).
+enum CourseComponent {
+  THEORY
+  LAB
+}
+
+enum GoalScope {
+  SEMESTER
+  OVERALL
+}
+
+// ─── Entities ──────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  /// Null for an account that has not been created with a password (none today;
+  /// the column is nullable so an OAuth provider could be added without a
+  /// migration on existing rows).
+  passwordHash String?
+  name         String?
+  /// Required by the Auth.js adapter contract.
+  emailVerified DateTime?
+  image         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  semesters Semester[]
+  goals     Goal[]
+  sessions  Session[]
+  accounts  Account[]
+
+  @@map("users")
+}
+
+/// Server-side session record (§8.1). One row per sign-in, with a sliding
+/// expiry: this is what makes a session revocable — deleting the row ends it on
+/// the next request, which a self-contained token could not do.
+/// Shaped to the Auth.js adapter contract.
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// Auth.js adapter contract. Unused while credentials are the only sign-in
+/// method; present so an OAuth provider can be added without a schema change.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+/// Auth.js adapter contract (email sign-in and verification flows).
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Semester {
+  id             String   @id @default(cuid())
+  userId         String
+  /// Free-form academic year label, e.g. "2025-26".
+  academicYear   String
+  semesterNumber Int
+  /// Optional per-semester GPA target (§21); goals may also be stored in Goal.
+  gpaTarget      Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects Subject[]
+  goals    Goal[]
+
+  /// §37: no duplicate semester entries for the same user.
+  @@unique([userId, academicYear, semesterNumber])
+  @@index([userId])
+  @@map("semesters")
+}
+
+model Subject {
+  id            String        @id @default(cuid())
+  semesterId    String
+  name          String
+  code          String?
+  credits       Float
+  courseType    CourseType
+  gradingType   GradingType
+  /// Only meaningful for relative grading (§15); optional everywhere else.
+  classStrength Int?
+  status        SubjectStatus @default(ONGOING)
+
+  /// Per-subject override of the theory/lab split for THEORY_AND_LAB (§11.2).
+  /// Null means "use the scheme default" — never hard-coded in the engine.
+  theoryWeightPercent Float?
+  labWeightPercent    Float?
+
+  /// Official result. Written only when the subject completes (§18.2, BR-03);
+  /// null for every ongoing subject — there is no "current grade" (BR-01).
+  finalMark   Float?
+  grade       String?
+  gradePoint  Float?
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  semester    Semester     @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  assessments Assessment[]
+
+  @@index([semesterId])
+  @@map("subjects")
+}
+
+model Assessment {
+  id        String @id @default(cuid())
+  subjectId String
+
+  /// Key into the scheme configuration (src/lib/academic/config), e.g. "CAT_I".
+  /// Weight and maxMarks are copied here at creation so historical records stay
+  /// correct if the scheme configuration later changes (§11, §27).
+  componentCode String
+  label         String
+  component     CourseComponent @default(THEORY)
+  sequence      Int             @default(0)
+  maxMarks      Float
+  /// Percentage weight of this component within its course component group.
+  weight        Float
+
+  /// Null while the assessment is NOT_AVAILABLE. 0 is a real, earned zero.
+  studentMark       Float?
+  /// Optional class statistics (§14) — never invented by the system.
+  classAverage      Float?
+  standardDeviation Float?
+
+  status     AssessmentStatus @default(NOT_AVAILABLE)
+  recordedAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, componentCode])
+  @@index([subjectId])
+  @@map("assessments")
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  userId      String
+  scope       GoalScope
+  /// Target GPA (SEMESTER scope) or CGPA (OVERALL scope), 0–10 (§37).
+  targetValue Float
+  semesterId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semester Semester? @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("goals")
+}

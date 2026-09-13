@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Grade/GPA Planner — Presentation</title>
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#3d5afe; --ok:#15803d; }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1280px; height: 720px; overflow: hidden; background: #f6f7fb; color: var(--ink);
+         font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .slide { position: absolute; inset: 0; padding: 68px 84px; display: none; flex-direction: column; justify-content: center; }
+  .slide.on { display: flex; }
+  .eyebrow { font-size: 15px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 64px; letter-spacing: -.02em; margin-top: 14px; }
+  h2 { font-size: 40px; letter-spacing: -.015em; margin-top: 12px; }
+  .sub { font-size: 23px; color: var(--muted); margin-top: 16px; max-width: 940px; line-height: 1.45; }
+  .meta { margin-top: 44px; font-size: 18px; color: var(--muted); line-height: 1.8; }
+  ul { margin-top: 26px; font-size: 23px; line-height: 1.75; list-style: none; max-width: 1000px; }
+  li { padding-left: 30px; position: relative; margin-bottom: 8px; }
+  li::before { content: "—"; position: absolute; left: 0; color: var(--accent); }
+  li b { font-weight: 600; }
+  .rule { margin-top: 30px; padding: 20px 26px; background: #fff; border: 1px solid var(--line);
+          border-left: 4px solid var(--accent); border-radius: 10px; font-size: 24px; max-width: 980px; line-height: 1.5; }
+  pre { margin-top: 26px; font-family: "SF Mono", Menlo, monospace; font-size: 17px; line-height: 1.6;
+        background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 22px 26px; color: #334155; }
+  .cols { display: flex; gap: 26px; margin-top: 26px; }
+  .card { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; }
+  .card h3 { font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .card p { font-size: 20px; margin-top: 10px; line-height: 1.45; }
+  .tag { display: inline-block; margin-top: 22px; font-size: 17px; color: var(--ok); background: #f0fdf4;
+         border: 1px solid #bbf7d0; border-radius: 999px; padding: 7px 16px; }
+</style></head>
+<body>
+
+<section class="slide" id="s1">
+  <p class="eyebrow">BACSE344 · Cloud Infrastructure and Architecture · Digital Assignment C1</p>
+  <h1>Grade/GPA Planner</h1>
+  <p class="sub">Personal Academic Performance &amp; GPA Planning System — a cloud-based web application for tracking assessments, calculating GPA and CGPA, and planning the marks a target requires.</p>
+  <p class="meta">Faculty: Dr. P. Anandan</p>
+</section>
+
+<section class="slide" id="s2">
+  <p class="eyebrow">The problem</p>
+  <h2>A mark that has not been released is not a zero</h2>
+  <p class="sub">Spreadsheets and generic calculators average whatever is in the column. An unreleased FAT becomes a zero, and the student sees a failing projection that answers a question nobody asked.</p>
+  <div class="rule">The system keeps four things distinct: <b>marks earned</b>, <b>assessments not yet available</b>, <b>planning targets</b>, and <b>official grades</b> — and never presents one as another.</div>
+</section>
+
+<section class="slide" id="s3">
+  <p class="eyebrow">Architecture</p>
+  <h2>Three tiers, one deployment</h2>
+  <pre>          Student (browser)
+                 |  HTTPS
+   +-------------v--------------------------------+
+   |  NEXT.JS DEPLOYMENT                          |
+   |    Presentation   server + client components |
+   |    Application    /api routes, Server Actions|
+   |    Services       ownership, persistence     |
+   |    CALCULATION ENGINE  pure, unit-tested     |
+   +-------------+--------------------------------+
+                 |  Prisma + pooled pg adapter
+        +--------v---------+
+        |   PostgreSQL     |  cloud-hosted
+        +------------------+</pre>
+  <p class="sub" style="margin-top:20px">The tier boundary is enforced in code: engine and data access are server-only modules that cannot be imported into the browser bundle.</p>
+</section>
+
+<section class="slide" id="s4">
+  <p class="eyebrow">Implementation</p>
+  <h2>Rules in one place, tested on their own</h2>
+  <ul>
+    <li><b>Calculation engine</b> — pure TypeScript modules, no React, no Prisma; <b>64 unit tests</b> covering the specification's worked examples and every grade boundary</li>
+    <li><b>Configuration, not constants</b> — weightages, grade bands and thresholds live outside the calculation functions</li>
+    <li><b>REST API</b> — endpoints under <code>/api</code> with OpenAPI 3.0 documentation generated from the same validation schemas the handlers use</li>
+    <li><b>Authentication</b> — Auth.js with server-side session records; every request re-checks record ownership</li>
+  </ul>
+</section>
+
+<section class="slide" id="s5">
+  <p class="eyebrow">Cloud deployment</p>
+  <h2>One application, a managed database, no secrets in code</h2>
+  <div class="cols">
+    <div class="card"><h3>Application</h3><p>Cloud-hosted Next.js deployment serving both the interface and the API over HTTPS.</p></div>
+    <div class="card"><h3>Database</h3><p>Managed PostgreSQL reached through a connection pooler — serverless functions would otherwise exhaust a free-tier connection limit.</p></div>
+    <div class="card"><h3>Configuration</h3><p>Database URL and session signing key supplied as environment variables; migrations applied with <code>prisma migrate deploy</code>.</p></div>
+  </div>
+</section>
+
+<section class="slide" id="s6">
+  <p class="eyebrow">Demonstration</p>
+  <h2>The working application</h2>
+  <p class="sub">Official CGPA from completed courses · a semester with nothing completed reads "not yet available" · ongoing subjects show a status, never a grade · required marks for a target · a subject completing only when every component is recorded.</p>
+</section>
+
+<section class="slide" id="s7">
+  <p class="eyebrow">In summary</p>
+  <h2>Every rule enforced in code, not just in the interface</h2>
+  <ul>
+    <li>An unavailable assessment counts towards nothing — it is never a zero</li>
+    <li>An ongoing subject has no grade to show</li>
+    <li>A GPA with nothing completed is "not yet available", never 0.00</li>
+    <li>A required mark is a requirement — including when the answer is that the target can no longer be reached</li>
+  </ul>
+  <span class="tag">Thank you</span>
+</section>
+
+<script>
+  window.showSlide = (n) => {
+    document.querySelectorAll(".slide").forEach((s) => s.classList.remove("on"));
+    document.getElementById("s" + n).classList.add("on");
+  };
+  window.showSlide(1);
+</script>
+</body></html>
