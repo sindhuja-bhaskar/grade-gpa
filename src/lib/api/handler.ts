@@ -2,6 +2,7 @@ import "server-only";
 
 import type { NextRequest, NextResponse } from "next/server";
 import type { ZodType } from "zod";
+import { requirePermission, type Permission } from "@/lib/auth/roles";
 import { requireUser, type SessionUser } from "@/lib/auth/session";
 import { ApiError } from "./errors";
 import { failure } from "./respond";
@@ -36,6 +37,24 @@ export function withUser<P = Record<string, string>>(
       return failure(error);
     }
   };
+}
+
+/**
+ * `withUser` plus a role check (DA3 Q2(b)): 401 without a valid session, 403
+ * for a signed-in account whose role lacks the permission, before the handler
+ * — and therefore before any ownership lookup — runs.
+ */
+export function withPermission<P = Record<string, string>>(
+  permission: Permission,
+  handler: (
+    request: NextRequest,
+    context: { user: SessionUser; params: P },
+  ) => Promise<NextResponse>,
+) {
+  return withUser<P>(async (request, context) => {
+    requirePermission(context.user, permission);
+    return handler(request, context);
+  });
 }
 
 /** Public routes (register, login, refresh, docs) still need error handling. */

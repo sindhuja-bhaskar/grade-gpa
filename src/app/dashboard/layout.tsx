@@ -9,6 +9,7 @@ const NAV: Array<{ href: Route; label: string }> = [
   { href: "/dashboard/semesters", label: "Semesters" },
   { href: "/dashboard/subjects", label: "Subjects" },
   { href: "/dashboard/goals", label: "Targets" },
+  { href: "/dashboard/security", label: "Security" },
 ];
 
 export default async function DashboardLayout({
@@ -44,7 +45,10 @@ export default async function DashboardLayout({
             </Link>
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            <span className="text-[var(--color-muted)]">{user.email}</span>
+            <span className="text-[var(--color-muted)]">
+              {user.email}
+              {user.role === "ADVISOR" ? " · advisor (read-only)" : null}
+            </span>
             <form action={signOutAction}>
               <button
                 type="submit"

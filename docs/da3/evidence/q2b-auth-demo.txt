@@ -1,0 +1,35 @@
+Target: http://localhost:3100
+
+── 1. Update/Delete without a valid token ──
+401  DELETE /api/subjects/any-id             no cookie → UNAUTHORIZED: Authentication is required.
+401  PUT    /api/subjects/any-id             no cookie → UNAUTHORIZED: Authentication is required.
+401  DELETE /api/subjects/any-id             forged cookie → UNAUTHORIZED: Authentication is required.
+
+── 2. Enrol an authenticator (TOTP) ──
+200  POST   /api/auth/login                  password only (no MFA yet) → ok
+200  POST   /api/auth/mfa                    start enrolment → ok
+     otpauth URI: otpauth://totp/Grade%20GPA%20Planner%3Astudent%40example.com?secret=<secret>&issuer=Grade+GPA+Planner&algorithm=SHA1&digits=6&period=30
+422  PUT    /api/auth/mfa                    wrong code → VALIDATION_ERROR: That code is not valid. Check the app and try again.
+200  PUT    /api/auth/mfa                    code from app → ok
+200  POST   /api/auth/logout                 sign out → ok
+
+── 3. Sign-in now needs the second factor ──
+401  POST   /api/auth/login                  password only → MFA_REQUIRED: Enter the 6-digit code from your authenticator app.
+401  POST   /api/auth/login                  wrong code → UNAUTHORIZED: Email, password or authenticator code is incorrect.
+200  POST   /api/auth/login                  password + TOTP → ok
+401  POST   /api/auth/login                  same code replayed → UNAUTHORIZED: Email, password or authenticator code is incorrect.
+
+── 4. Role check: STUDENT may update/delete own records ──
+200  GET    /api/subjects                    list → ok
+200  PUT    /api/subjects/cmvv0ogsw0004cn14flqo7yg4 rename own subject → ok
+201  POST   /api/semesters                   create scratch semester → ok
+204  DELETE /api/semesters/cmvv0pp790002gs14vn4bpj3f delete it → ok
+
+── 5. Role check: ADVISOR is read-only ──
+200  POST   /api/auth/login                  advisor sign-in → ok
+200  GET    /api/subjects                    advisor read → ok
+403  PUT    /api/subjects/cmvv0ogsw0004cn14flqo7yg4 advisor update → FORBIDDEN: The advisor role is not permitted to modify academic records.
+403  DELETE /api/subjects/cmvv0ogsw0004cn14flqo7yg4 advisor delete → FORBIDDEN: The advisor role is not permitted to modify academic records.
+
+── 6. Reset: turn the authenticator off again ──
+200  DELETE /api/auth/mfa                    disable with current code → ok

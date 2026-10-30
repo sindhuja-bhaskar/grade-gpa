@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
+import { requirePermission } from "@/lib/auth/roles";
 import { requireUser } from "@/lib/auth/session";
 import {
   markValue,
@@ -49,6 +50,17 @@ import { ApiError } from "@/lib/api/errors";
  * live in src/lib/actions/form-state.ts.
  */
 
+/**
+ * Every action below changes academic records, so each needs the same
+ * `records:write` permission the REST API demands (DA3 Q2(b)) — otherwise an
+ * advisor could do through a form what the API refuses.
+ */
+async function requireWriter() {
+  const user = await requireUser();
+  requirePermission(user, "records:write");
+  return user;
+}
+
 // ─── Semesters (§9, §21) ───────────────────────────────────────────────────
 
 export async function createSemesterAction(
@@ -56,7 +68,7 @@ export async function createSemesterAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const input = semesterCreateSchema.parse({
       academicYear: text(form, "academicYear"),
       semesterNumber: number(form, "semesterNumber"),
@@ -76,7 +88,7 @@ export async function updateSemesterAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const input = semesterUpdateSchema.parse({
       academicYear: text(form, "academicYear"),
       semesterNumber: number(form, "semesterNumber"),
@@ -96,7 +108,7 @@ export async function deleteSemesterAction(
   _form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const semester = await getSemester(user.id, semesterId);
     await deleteSemester(user.id, semesterId);
 
@@ -117,7 +129,7 @@ export async function createSubjectAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const input = subjectCreateSchema.parse({
       semesterId: text(form, "semesterId"),
       name: text(form, "name"),
@@ -143,7 +155,7 @@ export async function updateSubjectAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const input = subjectUpdateSchema.parse({
       name: text(form, "name"),
       code: optionalText(form, "code"),
@@ -169,7 +181,7 @@ export async function deleteSubjectAction(
   _form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const subject = await getSubject(user.id, subjectId);
     await deleteSubject(user.id, subjectId);
 
@@ -198,7 +210,7 @@ export async function saveMarksAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
 
     const ids = form.getAll("assessmentId").map(String);
     if (ids.length === 0) throw ApiError.validation("Nothing to save.");
@@ -264,7 +276,7 @@ export async function saveGoalAction(
   form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     const input = goalCreateSchema.parse({
       scope: text(form, "scope"),
       targetValue: number(form, "targetValue"),
@@ -286,7 +298,7 @@ export async function deleteGoalAction(
   _form: FormData,
 ): Promise<FormState> {
   return runFormAction(async () => {
-    const user = await requireUser();
+    const user = await requireWriter();
     await deleteGoal(user.id, goalId);
 
     revalidatePath("/dashboard/goals");

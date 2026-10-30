@@ -1,0 +1,17 @@
+# Secrets never enter an image layer: DATABASE_URL and AUTH_SECRET are passed
+# at run time by docker-compose (DA3, Q2).
+.env
+.env.*
+!.env.example
+
+node_modules
+.next
+src/generated
+.git
+docs
+coverage
+*.tsbuildinfo
+.DS_Store
+Dockerfile*
+docker-compose*.yml
+deploy

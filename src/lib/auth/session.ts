@@ -3,6 +3,7 @@ import "server-only";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { ApiError } from "@/lib/api/errors";
+import type { Role } from "@/lib/auth/roles";
 
 /**
  * Session access for route handlers and server components (docs/reqs.md §8).
@@ -16,6 +17,7 @@ import { ApiError } from "@/lib/api/errors";
 export interface SessionUser {
   id: string;
   email: string;
+  role: Role;
 }
 
 /** The signed-in student, or null. Never throws. */
@@ -27,6 +29,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return {
     id,
     email: session.user.email ?? "",
+    role: session.user.role ?? "STUDENT",
   };
 }
 

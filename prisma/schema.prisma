@@ -42,6 +42,14 @@ enum CourseComponent {
   LAB
 }
 
+/// Who a signed-in account is (DA3, Q2(b)). The SRS (v2.1) has one role; this
+/// adds a read-only faculty advisor so that update and delete can be limited
+/// to the student who owns the record.
+enum Role {
+  STUDENT
+  ADVISOR
+}
+
 enum GoalScope {
   SEMESTER
   OVERALL
@@ -57,6 +65,15 @@ model User {
   /// migration on existing rows).
   passwordHash String?
   name         String?
+  role         Role      @default(STUDENT)
+
+  /// TOTP second factor (DA3, Q2(b)). The secret is AES-256-GCM encrypted
+  /// (src/lib/auth/totp.ts), never stored in the clear. A secret with no
+  /// enabled date is an enrolment that has not been confirmed yet.
+  totpSecret    String?
+  totpEnabledAt DateTime?
+  /// Last time step used to sign in, so each code works only once.
+  totpLastStep  Int?
   /// Required by the Auth.js adapter contract.
   emailVerified DateTime?
   image         String?

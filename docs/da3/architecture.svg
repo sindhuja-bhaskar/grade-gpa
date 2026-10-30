@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 830" width="1200" height="830" font-family="Helvetica, Arial, sans-serif">
+  <title>Grade/GPA Planner — DA3 deployment architecture with cloud bursting</title>
+  <defs>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1e40af"/></marker>
+    <marker id="green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#15803d"/></marker>
+    <marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ea580c"/></marker>
+  </defs>
+  <rect width="1200" height="830" fill="#ffffff"/>
+
+  <text x="30" y="40" font-size="22" font-weight="700" fill="#0f172a">Grade/GPA Planner — results-day architecture (DA3)</text>
+  <text x="30" y="64" font-size="13" fill="#475569">Peak: results day, every student opens GET /api/cgpa within minutes of grades being published.</text>
+
+  <!-- Legend -->
+  <line x1="850" y1="34" x2="895" y2="34" stroke="#1e40af" stroke-width="2.5" marker-end="url(#blue)"/>
+  <text x="903" y="38" font-size="12" fill="#0f172a">implemented and measured (Q1 a–c)</text>
+  <line x1="850" y1="58" x2="895" y2="58" stroke="#ea580c" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#orange)"/>
+  <text x="903" y="62" font-size="12" fill="#0f172a">cloud bursting tier (Q1 d)</text>
+
+  <!-- Students -->
+  <rect x="30" y="295" width="175" height="100" rx="10" fill="#f8fafc" stroke="#334155" stroke-width="1.5"/>
+  <text x="117" y="328" font-size="15" font-weight="700" text-anchor="middle" fill="#0f172a">Students</text>
+  <text x="117" y="350" font-size="12" text-anchor="middle" fill="#334155">Browser / API client</text>
+  <text x="117" y="368" font-size="12" text-anchor="middle" fill="#334155">Next.js UI pages</text>
+  <text x="117" y="386" font-size="11" text-anchor="middle" fill="#64748b">ab -n 1000 -c 50</text>
+
+  <!-- Docker Compose boundary -->
+  <rect x="235" y="105" width="585" height="490" rx="14" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+  <text x="252" y="128" font-size="13" font-weight="700" fill="#334155">Docker Compose · docker-compose.scale.yml</text>
+  <text x="252" y="146" font-size="11" fill="#64748b">network gradegpa_default · secrets from .env at run time</text>
+
+  <!-- Nginx -->
+  <rect x="255" y="285" width="185" height="120" rx="10" fill="#eff6ff" stroke="#1e40af" stroke-width="2"/>
+  <text x="347" y="312" font-size="15" font-weight="700" text-anchor="middle" fill="#1e3a8a">gradegpa-nginx</text>
+  <text x="347" y="331" font-size="12" text-anchor="middle" fill="#1e3a8a">nginx:1.27-alpine</text>
+  <text x="347" y="349" font-size="12" text-anchor="middle" fill="#1e3a8a">host :8080 → container :80</text>
+  <text x="347" y="367" font-size="11" text-anchor="middle" fill="#334155">round-robin, shared zone</text>
+  <text x="347" y="384" font-size="11" text-anchor="middle" fill="#334155">proxy_next_upstream ×3</text>
+  <text x="347" y="399" font-size="11" text-anchor="middle" fill="#334155">max_fails=1 fail_timeout=10s</text>
+
+  <line x1="205" y1="345" x2="251" y2="345" stroke="#1e40af" stroke-width="2.5" marker-end="url(#blue)"/>
+  <text x="228" y="337" font-size="11" text-anchor="middle" fill="#1e40af">HTTP</text>
+
+  <!-- Backends -->
+  <g font-size="12" fill="#1e3a8a">
+    <rect x="520" y="165" width="280" height="100" rx="10" fill="#eff6ff" stroke="#1e40af" stroke-width="2"/>
+    <text x="660" y="190" font-size="15" font-weight="700" text-anchor="middle">gradegpa-backend-1</text>
+    <text x="660" y="209" text-anchor="middle">backend1:3000 · host :3001</text>
+    <text x="660" y="227" text-anchor="middle" fill="#334155">Next.js 16 standalone (UI + /api)</text>
+    <text x="660" y="245" font-size="11" text-anchor="middle" fill="#64748b">gradegpa:hardened · node:22-alpine · uid 1001</text>
+
+    <rect x="520" y="295" width="280" height="100" rx="10" fill="#eff6ff" stroke="#1e40af" stroke-width="2"/>
+    <text x="660" y="320" font-size="15" font-weight="700" text-anchor="middle">gradegpa-backend-2</text>
+    <text x="660" y="339" text-anchor="middle">backend2:3000 · host :3002</text>
+    <text x="660" y="357" text-anchor="middle" fill="#334155">Next.js 16 standalone (UI + /api)</text>
+    <text x="660" y="375" font-size="11" text-anchor="middle" fill="#64748b">gradegpa:hardened · node:22-alpine · uid 1001</text>
+
+    <rect x="520" y="425" width="280" height="100" rx="10" fill="#eff6ff" stroke="#1e40af" stroke-width="2"/>
+    <text x="660" y="450" font-size="15" font-weight="700" text-anchor="middle">gradegpa-backend-3</text>
+    <text x="660" y="469" text-anchor="middle">backend3:3000 · host :3003</text>
+    <text x="660" y="487" text-anchor="middle" fill="#334155">Next.js 16 standalone (UI + /api)</text>
+    <text x="660" y="505" font-size="11" text-anchor="middle" fill="#64748b">gradegpa:hardened · node:22-alpine · uid 1001</text>
+  </g>
+  <text x="362" y="545" font-size="11" fill="#475569">Stateless replicas: shared AUTH_SECRET and</text>
+  <text x="362" y="560" font-size="11" fill="#475569">sessions in the database, so any replica</text>
+  <text x="362" y="575" font-size="11" fill="#475569">can serve any signed-in student.</text>
+
+  <line x1="440" y1="335" x2="516" y2="218" stroke="#1e40af" stroke-width="2.5" marker-end="url(#blue)"/>
+  <line x1="440" y1="345" x2="516" y2="345" stroke="#1e40af" stroke-width="2.5" marker-end="url(#blue)"/>
+  <line x1="440" y1="355" x2="516" y2="472" stroke="#1e40af" stroke-width="2.5" marker-end="url(#blue)"/>
+
+  <!-- Cloud database -->
+  <rect x="895" y="275" width="275" height="140" rx="10" fill="#f0fdf4" stroke="#15803d" stroke-width="2"/>
+  <text x="1032" y="302" font-size="15" font-weight="700" text-anchor="middle" fill="#14532d">Prisma Postgres</text>
+  <text x="1032" y="321" font-size="12" text-anchor="middle" fill="#14532d">db.prisma.io:5432 · TLS (sslmode=require)</text>
+  <text x="1032" y="339" font-size="12" text-anchor="middle" fill="#14532d">existing cloud database from DA1</text>
+  <text x="1032" y="361" font-size="11" text-anchor="middle" fill="#334155">users · sessions · semesters ·</text>
+  <text x="1032" y="377" font-size="11" text-anchor="middle" fill="#334155">subjects · assessments · goals</text>
+  <text x="1032" y="398" font-size="11" text-anchor="middle" fill="#64748b">Prisma ORM 7 + pg adapter</text>
+
+  <line x1="800" y1="215" x2="891" y2="320" stroke="#15803d" stroke-width="2.5" marker-end="url(#green)"/>
+  <line x1="800" y1="345" x2="891" y2="345" stroke="#15803d" stroke-width="2.5" marker-end="url(#green)"/>
+  <line x1="800" y1="475" x2="891" y2="370" stroke="#15803d" stroke-width="2.5" marker-end="url(#green)"/>
+  <text x="846" y="300" font-size="11" text-anchor="middle" fill="#15803d">pool ≤ 5</text>
+  <text x="846" y="314" font-size="11" text-anchor="middle" fill="#15803d">per replica</text>
+
+  <!-- Cloud bursting tier -->
+  <rect x="520" y="625" width="280" height="118" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="660" y="650" font-size="15" font-weight="700" text-anchor="middle" fill="#9a3412">Burst tier · Vercel</text>
+  <text x="660" y="669" font-size="12" text-anchor="middle" fill="#9a3412">hosting platform from DA1</text>
+  <text x="660" y="688" font-size="12" text-anchor="middle" fill="#7c2d12">same Next.js build as serverless functions</text>
+  <text x="660" y="706" font-size="11" text-anchor="middle" fill="#7c2d12">scales out per request, scales to zero</text>
+  <text x="660" y="723" font-size="11" text-anchor="middle" fill="#7c2d12">after the spike; billed only while used</text>
+
+  <path d="M347,405 L347,684 L516,684" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#orange)"/>
+  <text x="335" y="625" font-size="11" text-anchor="end" fill="#9a3412" font-weight="700">overflow when the 3 replicas saturate</text>
+  <text x="335" y="641" font-size="11" text-anchor="end" fill="#9a3412">backup / weighted upstream</text>
+  <text x="335" y="657" font-size="11" text-anchor="end" fill="#9a3412">trigger: p95 &gt; 3 s or CPU &gt; 70 %</text>
+  <text x="335" y="673" font-size="11" text-anchor="end" fill="#9a3412">or active connections &gt; 150</text>
+
+  <path d="M800,684 L1032,684 L1032,419" fill="none" stroke="#ea580c" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#orange)"/>
+  <text x="915" y="676" font-size="11" text-anchor="middle" fill="#9a3412">pooled connection (same data)</text>
+
+  <!-- Tools -->
+  <rect x="30" y="768" width="1140" height="44" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="46" y="795" font-size="12" fill="#0f172a"><tspan font-weight="700">Tools:</tspan> Docker + Docker Compose · Nginx 1.27 · Apache Bench 2.3 (load test) · Trivy 0.76 (image scan) · Prisma ORM 7 · Auth.js v5 · Next.js 16 · GitHub (assignment-3 branch)</text>
+</svg>

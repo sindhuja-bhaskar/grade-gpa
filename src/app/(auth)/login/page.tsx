@@ -8,6 +8,9 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  // Set once the password is accepted and the account has an authenticator
+  // enrolled (DA3 Q2(b)): the form then asks for the 6-digit code as well.
+  const [needsCode, setNeedsCode] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -21,12 +24,18 @@ export default function LoginPage() {
       body: JSON.stringify({
         email: form.get("email"),
         password: form.get("password"),
+        ...(needsCode ? { otp: form.get("otp") } : {}),
       }),
     });
 
     setPending(false);
     if (!response.ok) {
       const payload = await response.json().catch(() => null);
+      if (payload?.error?.code === "MFA_REQUIRED") {
+        setNeedsCode(true);
+        setError(null);
+        return;
+      }
       setError(payload?.error?.message ?? "Sign in failed. Try again.");
       return;
     }
@@ -46,6 +55,18 @@ export default function LoginPage() {
           type="password"
           autoComplete="current-password"
         />
+        {needsCode ? (
+          <Field
+            label="Authenticator code"
+            name="otp"
+            inputMode="numeric"
+            pattern="\d{6}"
+            maxLength={6}
+            autoComplete="one-time-code"
+            autoFocus
+            placeholder="6-digit code from Google or Microsoft Authenticator"
+          />
+        ) : null}
         {error ? (
           <p role="alert" className="text-sm text-[var(--color-risk)]">
             {error}
