@@ -1,0 +1,2 @@
+3 account(s) with a password; 1 stored in plain text.
+  hashed: legacy@example.com

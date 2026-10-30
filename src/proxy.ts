@@ -29,6 +29,8 @@ const PUBLIC_API_ROUTES = [
   "/api/auth/providers",
   "/api/auth/error",
   "/api/docs",
+  // Load-balancer and container health probe (DA3); reveals no student data.
+  "/api/health",
 ];
 
 const PUBLIC_PAGES = ["/", "/login", "/register"];

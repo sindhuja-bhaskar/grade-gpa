@@ -2,7 +2,8 @@
  * Renders docs/PROJECT_REPORT.md to a print-ready A4 PDF.
  *
  *   npm i --no-save marked playwright-core
- *   node scripts/build-report.mjs
+ *   node scripts/build-report.mjs                      # the DA1 project report
+ *   node scripts/build-report.mjs docs/DA3_REPORT.md docs/DA3-Report.pdf
  *
  * Uses the Chrome already installed on the machine (`channel: "chrome"`), so no
  * browser is downloaded. Neither package is a project dependency: the report is
@@ -16,7 +17,9 @@ import { Marked } from "marked";
 import { chromium } from "playwright-core";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const md = readFileSync(`${ROOT}/docs/PROJECT_REPORT.md`, "utf8");
+const [input = "docs/PROJECT_REPORT.md", output = "docs/Grade-GPA-Planner-Project-Report.pdf"] =
+  process.argv.slice(2);
+const md = readFileSync(resolve(ROOT, input), "utf8");
 
 const slug = (t) =>
   t.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
@@ -98,7 +101,7 @@ const browser = await chromium.launch({ channel: "chrome", headless: true });
 const page = await browser.newPage();
 await page.goto(`file://${ROOT}/docs/report.html`, { waitUntil: "networkidle" });
 await page.pdf({
-  path: `${ROOT}/docs/Grade-GPA-Planner-Project-Report.pdf`,
+  path: resolve(ROOT, output),
   format: "A4",
   printBackground: true,
   displayHeaderFooter: true,

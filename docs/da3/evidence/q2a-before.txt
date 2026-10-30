@@ -1,0 +1,8 @@
+-- BEFORE: SELECT email, role, "passwordHash" FROM users ORDER BY email;
+        email        |  role   |                         passwordHash                         
+---------------------+---------+--------------------------------------------------------------
+ advisor@example.com | ADVISOR | $2b$12$8KUlFGn/lbCqZdxBnx.ifOSgczIpScpdv8FhUZomJ4a1MiFs6yY1K
+ legacy@example.com  | STUDENT | legacy123
+ student@example.com | STUDENT | $2b$12$aIa5qrCZXlMxGQ1wIovMmuH90dbgH2N6Qdpcp7GJR8YIgTXuLpyr.
+(3 rows)
+

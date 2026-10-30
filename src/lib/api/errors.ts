@@ -10,6 +10,7 @@ import { ZodError } from "zod";
 
 export type ApiErrorCode =
   | "UNAUTHORIZED"
+  | "MFA_REQUIRED"
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
@@ -42,6 +43,18 @@ export class ApiError extends Error {
 
   static unauthorized(message = "Authentication is required."): ApiError {
     return new ApiError(401, "UNAUTHORIZED", message);
+  }
+
+  /**
+   * Password accepted, second factor still owed (DA3 Q2(b)). Still a 401 — no
+   * session exists yet — with its own code so the client can ask for the TOTP.
+   */
+  static mfaRequired(): ApiError {
+    return new ApiError(
+      401,
+      "MFA_REQUIRED",
+      "Enter the 6-digit code from your authenticator app.",
+    );
   }
 
   /** Used when a record exists but belongs to another student (§8.2). */

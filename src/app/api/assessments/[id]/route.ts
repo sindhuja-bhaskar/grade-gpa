@@ -1,4 +1,4 @@
-import { parseBody, withUser } from "@/lib/api/handler";
+import { parseBody, withUser, withPermission } from "@/lib/api/handler";
 import { noContent, ok } from "@/lib/api/respond";
 import {
   deleteAssessment,
@@ -20,12 +20,12 @@ export const GET = withUser<Params>(async (_request, { user, params }) => {
  * mark of zero. Recording the final outstanding component completes the subject
  * and writes its official grade (BR-21).
  */
-export const PUT = withUser<Params>(async (request, { user, params }) => {
+export const PUT = withPermission<Params>("records:write", async (request, { user, params }) => {
   const input = await parseBody(request, assessmentUpdateSchema);
   return ok(await updateAssessment(user.id, params.id, input));
 });
 
-export const DELETE = withUser<Params>(async (_request, { user, params }) => {
+export const DELETE = withPermission<Params>("records:write", async (_request, { user, params }) => {
   await deleteAssessment(user.id, params.id);
   return noContent();
 });

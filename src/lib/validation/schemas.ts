@@ -45,8 +45,21 @@ export const loginSchema = z
   .object({
     email: z.email("Enter a valid email address."),
     password: z.string().min(1, "Enter your password."),
+    /** Required once the account has an authenticator enrolled (DA3 Q2(b)). */
+    otp: z
+      .string()
+      .regex(/^\d{6}$/, "Enter the 6-digit code from your authenticator app.")
+      .optional(),
   })
   .meta({ id: "LoginRequest" });
+
+export const totpCodeSchema = z
+  .object({
+    code: z
+      .string()
+      .regex(/^\d{6}$/, "Enter the 6-digit code from your authenticator app."),
+  })
+  .meta({ id: "TotpCodeRequest" });
 
 export const updateProfileSchema = z
   .object({ name: z.string().trim().min(1).max(120).nullable() })

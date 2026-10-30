@@ -1,0 +1,53 @@
+This is ApacheBench, Version 2.3 <$Revision: 1923142 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        nginx/1.27.5
+Server Hostname:        127.0.0.1
+Server Port:            8080
+
+Document Path:          /api/cgpa
+Document Length:        573 bytes
+
+Concurrency Level:      50
+Time taken for tests:   313.869 seconds
+Complete requests:      1000
+Failed requests:        0
+Total transferred:      818000 bytes
+HTML transferred:       573000 bytes
+Requests per second:    3.19 [#/sec] (mean)
+Time per request:       15693.458 [ms] (mean)
+Time per request:       313.869 [ms] (mean, across all concurrent requests)
+Transfer rate:          2.55 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.5      0       6
+Processing:  1360 15520 1329.8  15060   22133
+Waiting:     1356 15519 1329.8  15060   22133
+Total:       1360 15520 1329.9  15060   22134
+
+Percentage of the requests served within a certain time (ms)
+  50%  15060
+  66%  15382
+  75%  15643
+  80%  15803
+  90%  16894
+  95%  18568
+  98%  20581
+  99%  21230
+ 100%  22134 (longest request)

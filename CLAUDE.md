@@ -177,6 +177,13 @@ changing:
 * **Auth.js v5 is a beta release** (`5.0.0-beta.32`). It is the App Router
   line and supports Next 16, but pin the version and re-test auth after any
   upgrade.
+* **DA3 adds an `ADVISOR` role** (read-only; `src/lib/auth/roles.ts`) beside the
+  SRS's single student role, so update/delete can be role-restricted. Every
+  write route uses `withPermission("records:write", …)`; Server Actions call
+  `requirePermission` — keep the two in step.
+* **DA3 adds TOTP MFA** (`src/lib/auth/totp.ts`, `credentials.ts`). The secret is
+  encrypted under a key derived from `AUTH_SECRET`: rotating `AUTH_SECRET`
+  invalidates every enrolled authenticator.
 * **Rate limiting is in-memory**, so per-instance only. Fine for the assignment;
   swap the store if the deployment ever runs more than one instance.
 

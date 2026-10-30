@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { ApiError } from "@/lib/api/errors";
 import { parseBody, withErrorHandling } from "@/lib/api/handler";
 import { ok } from "@/lib/api/respond";
+import { checkCredentials } from "@/lib/auth/credentials";
 import { clientKey, rateLimit } from "@/lib/auth/rate-limit";
 import { loginSchema } from "@/lib/validation/schemas";
 
@@ -28,7 +29,20 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     // Auth.js reports every credentials failure the same way; so do we — an
     // unauthenticated caller does not learn whether the email is registered.
     if (error instanceof AuthError) {
-      throw ApiError.unauthorized("Email or password is incorrect.");
+      // Only once the password itself is right does the caller learn that a
+      // second factor is owed (DA3 Q2(b)); this re-check runs on failed
+      // sign-ins without a code, never on the successful path.
+      if (!input.otp) {
+        const check = await checkCredentials(input);
+        if (!check.ok && check.reason === "mfa_required") {
+          throw ApiError.mfaRequired();
+        }
+      }
+      throw ApiError.unauthorized(
+        input.otp
+          ? "Email, password or authenticator code is incorrect."
+          : "Email or password is incorrect.",
+      );
     }
     throw error;
   }

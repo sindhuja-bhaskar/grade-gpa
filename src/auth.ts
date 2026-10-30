@@ -5,7 +5,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth/password";
+import { checkCredentials } from "@/lib/auth/credentials";
 import { loginSchema } from "@/lib/validation/schemas";
 
 /**
@@ -53,22 +53,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        otp: { label: "Authenticator code", type: "text" },
       },
       async authorize(raw) {
         const parsed = loginSchema.safeParse(raw);
         if (!parsed.success) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email.toLowerCase() },
-        });
-
-        // Same outcome whether the email is unknown or the password is wrong:
-        // an unauthenticated caller does not get to learn which (§35).
-        if (!user?.passwordHash) return null;
-        const valid = await verifyPassword(parsed.data.password, user.passwordHash);
-        if (!valid) return null;
-
-        return { id: user.id, email: user.email, name: user.name };
+        // Password and, when enrolled, the TOTP code (DA3 Q2(b)) — see
+        // src/lib/auth/credentials.ts. Any failure is the same null here.
+        const result = await checkCredentials(parsed.data);
+        return result.ok ? result.user : null;
       },
     }),
   ],
@@ -93,7 +87,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const stored = await prisma.session.findUnique({
         where: { sessionToken: token.sid },
-        select: { id: true, userId: true, expires: true },
+        select: {
+          id: true,
+          userId: true,
+          expires: true,
+          user: { select: { role: true } },
+        },
       });
 
       // Revoked, deleted with the account, or expired — end it here, so a valid
@@ -111,11 +110,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       token.sub = stored.userId;
+      // Re-read on every request with the session row, so a role change takes
+      // effect immediately rather than when the cookie is next issued.
+      token.role = stored.user.role;
       return token;
     },
 
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      if (token.role) session.user.role = token.role;
       return session;
     },
   },

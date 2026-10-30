@@ -1,0 +1,8 @@
+ 336 upstream=172.18.0.3:3000
+ 335 upstream=172.18.0.4:3000
+ 335 upstream=172.18.0.5:3000
+gradegpa-nginx 172.18.0.2/16
+gradegpa-backend-2 172.18.0.5/16
+gradegpa-backend-3 172.18.0.4/16
+gradegpa-backend-1 172.18.0.3/16
+

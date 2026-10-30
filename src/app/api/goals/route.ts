@@ -1,4 +1,4 @@
-import { parseBody, withUser } from "@/lib/api/handler";
+import { parseBody, withUser, withPermission } from "@/lib/api/handler";
 import { created, ok } from "@/lib/api/respond";
 import { createGoal, listGoals } from "@/lib/services/goals";
 import { goalCreateSchema } from "@/lib/validation/schemas";
@@ -9,7 +9,7 @@ export const GET = withUser(async (_request, { user }) => {
 });
 
 /** POST /api/goals — set (or replace) a target for a scope (§21). */
-export const POST = withUser(async (request, { user }) => {
+export const POST = withPermission("records:write", async (request, { user }) => {
   const input = await parseBody(request, goalCreateSchema);
   return created(await createGoal(user.id, input));
 });

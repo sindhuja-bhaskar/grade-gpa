@@ -1,0 +1,3 @@
+2026/10/30 13:30:06 [error] 21#21: *346 connect() failed (111: Connection refused) while connecting to upstream, client: 192.168.65.1, server: , request: "GET /api/cgpa HTTP/1.0", upstream: "http://172.18.0.5:3000/api/cgpa", host: "127.0.0.1:8080"
+2026/10/30 13:30:49 [error] 21#21: *664 connect() failed (113: Host is unreachable) while connecting to upstream, client: 192.168.65.1, server: , request: "GET /api/cgpa HTTP/1.0", upstream: "http://172.18.0.5:3000/api/cgpa", host: "127.0.0.1:8080"
+2026/10/30 13:30:49 [error] 26#26: *818 connect() failed (113: Host is unreachable) while connecting to upstream, client: 192.168.65.1, server: , request: "GET /api/cgpa HTTP/1.0", upstream: "http://172.18.0.5:3000/api/cgpa", host: "127.0.0.1:8080"

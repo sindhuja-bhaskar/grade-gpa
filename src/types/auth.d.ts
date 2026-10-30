@@ -10,12 +10,13 @@ import "next-auth/jwt";
  */
 declare module "next-auth" {
   interface Session {
-    user: { id: string } & DefaultSession["user"];
+    user: { id: string; role?: "STUDENT" | "ADVISOR" } & DefaultSession["user"];
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     sid?: string;
+    role?: "STUDENT" | "ADVISOR";
   }
 }
