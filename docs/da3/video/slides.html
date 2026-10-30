@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Grade/GPA Planner — DA3 demo</title>
+<!-- Every figure on these slides comes from docs/da3/evidence/. -->
+<style>
+  :root { --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --accent:#3d5afe; --ok:#15803d; --bad:#b91c1c; --burst:#ea580c; }
+  * { box-sizing: border-box; margin: 0; }
+  body { width: 1280px; height: 720px; overflow: hidden; background: #f6f7fb; color: var(--ink);
+         font-family: -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .slide { position: absolute; inset: 0; padding: 52px 72px; display: none; flex-direction: column; justify-content: center; }
+  .slide.on { display: flex; }
+  .eyebrow { font-size: 15px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: 58px; letter-spacing: -.02em; margin-top: 14px; }
+  h2 { font-size: 36px; letter-spacing: -.015em; margin-top: 10px; }
+  .sub { font-size: 21px; color: var(--muted); margin-top: 12px; max-width: 1080px; line-height: 1.45; }
+  .meta { margin-top: 40px; font-size: 18px; color: var(--muted); line-height: 1.8; }
+  pre { margin-top: 20px; font-family: "SF Mono", Menlo, monospace; font-size: 15px; line-height: 1.55;
+        background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 18px 22px; white-space: pre; overflow: hidden; }
+  pre .ok { color: #4ade80; } pre .bad { color: #f87171; } pre .dim { color: #94a3b8; }
+  .cols { display: flex; gap: 22px; margin-top: 22px; }
+  .card { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+  .card h3 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .card .big { font-size: 46px; font-weight: 700; margin-top: 8px; }
+  .card p { font-size: 18px; margin-top: 8px; line-height: 1.45; color: #334155; }
+  table { margin-top: 22px; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden;
+          border: 1px solid var(--line); font-size: 20px; width: 100%; }
+  th, td { padding: 13px 18px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: #f8fafc; }
+  td.num { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .good { color: var(--ok); } .badc { color: var(--bad); }
+  img.diagram { margin-top: 10px; width: 100%; max-height: 590px; object-fit: contain; background: #fff; border-radius: 12px; border: 1px solid var(--line); }
+  .pill { display: inline-block; font-size: 15px; padding: 5px 12px; border-radius: 999px; background: #eef2ff; color: #3730a3; margin-right: 8px; }
+</style></head>
+<body>
+
+<section class="slide" id="title">
+  <div class="eyebrow">BACSE344 · Cloud Infrastructure and Architecture · Digital Assignment 3</div>
+  <h1>Grade/GPA Planner:<br>scale it, then secure it</h1>
+  <p class="sub">The cloud application from Assignment 1: Next.js 16, Prisma, Auth.js, Prisma Postgres cloud database, hosted on Vercel.</p>
+  <div class="meta">Sindhuja Bhaskar · 25BCE5430 · C1 slot<br>github.com/sindhuja-bhaskar/grade-gpa · branch <b>assignment-3</b></div>
+</section>
+
+<section class="slide" id="q1a">
+  <div class="eyebrow">Q1 (a) · Peak demand and three instances</div>
+  <h2>Results day: every student opens GET /api/cgpa at once</h2>
+  <div class="cols">
+    <div class="card" style="flex:1.1">
+      <h3>docker-compose.scale.yml</h3>
+      <p>gradegpa-nginx · nginx:1.27-alpine · <b>:8080</b><br>gradegpa-backend-1 / 2 / 3 · <b>:3001 :3002 :3003</b><br>→ Prisma Postgres (db.prisma.io, TLS)</p>
+      <p style="margin-top:14px">Stateless replicas: sessions live in the database, one shared AUTH_SECRET.</p>
+    </div>
+    <div class="card" style="flex:1">
+      <h3>1,006 load-test requests, Nginx access log</h3>
+      <p>backend-1 &nbsp;<b>336</b><br>backend-2 &nbsp;<b>335</b><br>backend-3 &nbsp;<b>335</b></p>
+    </div>
+  </div>
+<pre><span class="dim">$ for i in 1 2 3 4 5 6; do curl -s localhost:8080/api/health; done</span>
+{"status":"ok","instance":"<span class="ok">backend1</span>"}  {"status":"ok","instance":"<span class="ok">backend2</span>"}  {"status":"ok","instance":"<span class="ok">backend3</span>"}
+{"status":"ok","instance":"<span class="ok">backend1</span>"}  {"status":"ok","instance":"<span class="ok">backend2</span>"}  {"status":"ok","instance":"<span class="ok">backend3</span>"}</pre>
+</section>
+
+<section class="slide" id="q1b">
+  <div class="eyebrow">Q1 (b) · Apache Bench · 1,000 requests · concurrency 50 · GET /api/cgpa</div>
+  <h2>Three instances: 2.9× the throughput</h2>
+  <table>
+    <tr><th>Metric</th><th>1 instance</th><th>3 instances</th><th>Change</th></tr>
+    <tr><td>Requests per second</td><td class="num">3.19</td><td class="num">9.27</td><td class="num good">2.91× higher</td></tr>
+    <tr><td>Average response time</td><td class="num">15,693 ms</td><td class="num">5,394 ms</td><td class="num good">65.6 % lower</td></tr>
+    <tr><td>95th percentile</td><td class="num">18,568 ms</td><td class="num">8,909 ms</td><td class="num good">52.0 % lower</td></tr>
+    <tr><td>Failed requests</td><td class="num">0</td><td class="num">0</td><td>—</td></tr>
+  </table>
+  <p class="sub">The bottleneck is database round trips. Each replica brings its own pool of 5 connections, so 3 replicas work on 15 requests at once.</p>
+</section>
+
+<section class="slide" id="q1c">
+  <div class="eyebrow">Q1 (c) · docker stop gradegpa-backend-2 during the load test</div>
+  <h2>From 9 failed requests to none</h2>
+  <div class="cols">
+    <div class="card"><h3>Before · naive round-robin</h3><div class="big badc">9 failed</div><p>991 × 200, 9 × 502 Bad Gateway</p></div>
+    <div class="card"><h3>After · failover config</h3><div class="big good">0 failed</div><p>1,000 × 200; 25 requests replayed on a healthy replica</p></div>
+  </div>
+<pre>upstream gradegpa_backend {
+    zone gradegpa_backend 64k;
+    server backend1:3000 <span class="ok">max_fails=1 fail_timeout=10s</span>;   <span class="dim"># same for backend2, backend3</span>
+}
+proxy_connect_timeout <span class="ok">2s</span>;
+proxy_next_upstream <span class="ok">error timeout http_502 http_503 http_504</span>;   <span class="dim"># GET only — writes are never replayed</span>
+proxy_next_upstream_tries 3;</pre>
+</section>
+
+<section class="slide" id="q1d">
+  <div class="eyebrow">Q1 (d) · Architecture with cloud bursting (orange)</div>
+  <img class="diagram" src="../architecture.png" alt="">
+</section>
+
+<section class="slide" id="q2a">
+  <div class="eyebrow">Q2 (a) · Most sensitive data: student marks and grades</div>
+  <h2>Passwords as salted bcrypt hashes (cost 12)</h2>
+<pre><span class="dim">-- BEFORE  (a legacy account imported with a plain-text password)</span>
+ legacy@example.com  | STUDENT | <span class="bad">legacy123</span>
+ student@example.com | STUDENT | $2b$12$aIa5qrCZXlMxGQ1wIovMmuH90dbgH2N6Qdpcp7GJR8YIgTXuLpyr.
+
+<span class="dim">$ npx tsx scripts/hash-plaintext-passwords.ts</span>
+3 account(s) with a password; 1 stored in plain text.
+  hashed: legacy@example.com
+
+<span class="dim">-- AFTER</span>
+ legacy@example.com  | STUDENT | <span class="ok">$2b$12$vixsTHxukan0qqP6f5YHRe8m.OtxtNwSRFB8x8iZ./GbgQNoPFxmm</span>
+ student@example.com | STUDENT | $2b$12$aIa5qrCZXlMxGQ1wIovMmuH90dbgH2N6Qdpcp7GJR8YIgTXuLpyr.</pre>
+</section>
+
+<section class="slide" id="q2b">
+  <div class="eyebrow">Q2 (b) · Update and Delete restricted by role</div>
+  <h2>401 without a valid token · 403 for the read-only advisor</h2>
+<pre><span class="bad">401</span>  DELETE /api/subjects/{id}   no cookie       → UNAUTHORIZED
+<span class="bad">401</span>  PUT    /api/subjects/{id}   no cookie       → UNAUTHORIZED
+<span class="bad">401</span>  DELETE /api/subjects/{id}   forged cookie   → UNAUTHORIZED
+<span class="bad">401</span>  POST   /api/auth/login      password only   → MFA_REQUIRED
+<span class="bad">401</span>  POST   /api/auth/login      replayed code   → UNAUTHORIZED
+<span class="ok">200</span>  PUT    /api/subjects/{id}   student (owner) → ok
+<span class="ok">204</span>  DELETE /api/semesters/{id}  student (owner) → ok
+<span class="ok">200</span>  GET    /api/subjects        advisor read    → ok
+<span class="bad">403</span>  PUT    /api/subjects/{id}   advisor update  → FORBIDDEN: not permitted to modify academic records
+<span class="bad">403</span>  DELETE /api/subjects/{id}   advisor delete  → FORBIDDEN: not permitted to modify academic records</pre>
+</section>
+
+<section class="slide" id="q2c">
+  <div class="eyebrow">Q2 (c) · Trivy 0.76 · CRITICAL and HIGH vulnerabilities</div>
+  <h2>Hardened image: from 27 / 487 to 0 / 0</h2>
+  <table>
+    <tr><th>Image</th><th>Size</th><th>User</th><th>Critical</th><th>High</th></tr>
+    <tr><td>Baseline · node:22 (Debian)</td><td class="num">3.94 GB</td><td>root</td><td class="num badc">27</td><td class="num badc">487</td></tr>
+    <tr><td>Alpine · multi-stage · non-root</td><td class="num">343 MB</td><td>uid 1001</td><td class="num">3</td><td class="num">3</td></tr>
+    <tr><td>+ Next.js 16.4.1 security upgrade</td><td class="num">315 MB</td><td>uid 1001</td><td class="num good">0</td><td class="num good">0</td></tr>
+  </table>
+  <p class="sub">Also: no npm in the runtime image, read-only app files, no secrets in layers, health check.</p>
+</section>
+
+<section class="slide" id="q2d">
+  <div class="eyebrow">Q2 (d) · Threat agents and regulation</div>
+  <h2>Two threat agents, two controls, GDPR</h2>
+  <table style="font-size:18px">
+    <tr><th>Threat agent</th><th>Control implemented</th><th>GDPR requirement</th></tr>
+    <tr><td><b>External attacker</b><br>reusing stolen or phished passwords</td><td>TOTP MFA (single-use codes, encrypted secret) + salted bcrypt + rate limit</td><td>Art. 32: security appropriate to the risk, incl. encryption and confidentiality</td></tr>
+    <tr><td><b>Malicious insider</b><br>a peer or staff member altering marks</td><td>Read-only ADVISOR role (403), ownership checks, revocable sessions, non-root containers</td><td>Art. 5(1)(f) integrity and confidentiality; Art. 25 data protection by design</td></tr>
+  </table>
+  <p class="sub">GDPR applies because names, emails and marks are personal data of identifiable students. India's DPDP Act 2023 sets the same duty.</p>
+</section>
+
+<script>
+  window.showSlide = (id) => {
+    document.querySelectorAll(".slide").forEach((s) => s.classList.toggle("on", s.id === id));
+  };
+  showSlide(location.hash.slice(1) || "title");
+</script>
+</body></html>

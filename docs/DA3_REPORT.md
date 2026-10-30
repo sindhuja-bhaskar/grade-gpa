@@ -89,8 +89,11 @@ Nginx access log for the 3-instance load test of `/api/cgpa`
 > all workers share one rotation and one failure count. After that the
 > distribution is exactly even, as shown above.
 
-📸 *Screenshots: `docker compose -f docker-compose.scale.yml ps` showing four
-containers; the six `/api/health` calls above.*
+![docker compose ps, round-robin health checks and per-replica request counts](da3/screenshots/q1a-compose-and-rotation.png)
+
+*Figure 1 — The four containers running, six consecutive requests through
+Nginx rotating across the three backends, and the per-replica request counts
+from the 3-instance load test.*
 
 ## 1(b) Load test — 1 instance vs 3 instances
 
@@ -125,7 +128,13 @@ threefold. The improvement stays slightly under 3× because all three replicas
 share one database server and one network link to it. That shared database is
 the next bottleneck, which part (d) addresses.
 
-📸 *Screenshots: the summary block of both `ab` runs.*
+![Apache Bench, 1 instance](da3/screenshots/q1b-ab-1-instance.png)
+
+*Figure 2 — Apache Bench against one instance: 3.19 requests/s, 15,693 ms mean.*
+
+![Apache Bench, 3 instances](da3/screenshots/q1b-ab-3-instances.png)
+
+*Figure 3 — The same test against three instances: 9.27 requests/s, 5,394 ms mean.*
 
 ## 1(c) Stopping an instance during the load test
 
@@ -185,8 +194,16 @@ access log with two upstreams, for example
 `upstream=172.18.0.5:3000, 172.18.0.4:3000 ... 200`: the first replica failed
 and the second one answered. The student received HTTP 200 every time.
 
-📸 *Screenshots: the `ab` summary for both runs (Failed requests: 9 vs 0); the
-`docker stop` command; one access-log line with two upstream addresses.*
+![Before: naive config, 9 failed requests](da3/screenshots/q1c-before-naive.png)
+
+*Figure 4 — Before: backend-2 stopped during the load test with the naive
+configuration. 9 requests fail with HTTP 502.*
+
+![After: failover config, 0 failed requests](da3/screenshots/q1c-after-failover.png)
+
+*Figure 5 — After: the same test with `lb-3.conf`. 0 requests fail; the
+access-log lines show requests that hit the stopped replica (172.18.0.5) and
+were answered by another one.*
 
 ## 1(d) Architecture diagram and cloud bursting
 
@@ -301,8 +318,12 @@ legacy-import account with a plain-text password was written
 
 A second run reports `0 stored in plain text`.
 
-📸 *Screenshots: the `users` table before and after, in Prisma Studio
-(`npx prisma studio`) or psql.*
+![users table before and after hashing](da3/screenshots/q2a-password-hashing.png)
+
+*Figure 6 — The `users` table before and after `hash-plaintext-passwords.ts`.
+This run used a disposable PostgreSQL 16 database with the same schema and
+migrations, so that a plain-text password was never written to the live cloud
+database.*
 
 ## 2(b) Multi-factor authentication (TOTP) and role-restricted Update/Delete
 
@@ -389,9 +410,26 @@ The domain has two roles (new `Role` enum, migration
 
 The same 21 status codes were reproduced against the final hardened Docker image.
 
-📸 *Screenshots: the Security page with the QR code; Google/Microsoft
-Authenticator showing the "Grade GPA Planner" entry; the login page asking for
-the code; a `curl -X DELETE` without a cookie returning 401; the advisor's 403.*
+![Security page with the enrolment QR code](da3/screenshots/q2b-security-qr.png)
+
+*Figure 7 — The Security page on the deployed site
+(grade-gpa-git-assignment-3-sindhuja4.vercel.app): the QR code to scan with
+Google or Microsoft Authenticator, and the key for manual entry.*
+
+![Two-step sign-in enabled](da3/screenshots/q2b-mfa-enabled.png)
+
+*Figure 8 — After the 6-digit code from the app is confirmed, two-step sign-in is on.*
+
+![Login asking for the authenticator code](da3/screenshots/q2b-login-asks-for-code.png)
+
+*Figure 9 — Signing in again: after the password, the site asks for the
+authenticator code.*
+
+![curl: 401 without a token, 403 for the advisor](da3/screenshots/q2b-api-401-403.png)
+
+*Figure 10 — The deployed site's API: Update/Delete without a token, or with a
+forged one, return 401; the signed-in ADVISOR can read but gets 403 on update
+and delete.*
 
 ## 2(c) Container image scan with Trivy — before and after hardening
 
@@ -442,8 +480,11 @@ $ docker run --rm --entrypoint id gradegpa:baseline
 uid=0(root) gid=0(root) groups=0(root)
 ```
 
-📸 *Screenshots: the Trivy summary tables for the baseline and hardened images;
-`docker images gradegpa`.*
+![Trivy before and after, image sizes and users](da3/screenshots/q2c-trivy-before-after.png)
+
+*Figure 11 — Trivy results for the baseline image, the hardened image, and the
+hardened image after the Next.js upgrade; image sizes; the user each image
+runs as.*
 
 ## 2(d) Threat agents, controls and regulation
 
